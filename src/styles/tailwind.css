@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles for transitions and feedback */
+.fade-in {
+  @apply transition-opacity duration-300 opacity-100;
+}
+.fade-out {
+  @apply transition-opacity duration-300 opacity-0;
+}
