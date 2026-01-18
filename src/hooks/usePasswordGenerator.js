@@ -69,6 +69,15 @@ const usePasswordGenerator = () => {
     setOptions((prev) => ({ ...prev, [key]: value }));
   };
 
+  // Criteria for UI feedback
+  const criteria = [
+    { label: 'At least 12 characters', met: options.length >= 12 },
+    { label: 'Uppercase letter', met: options.uppercase },
+    { label: 'Lowercase letter', met: options.lowercase },
+    { label: 'Number', met: options.numbers },
+    { label: 'Symbol', met: options.symbols },
+  ];
+
   return {
     options,
     password,
@@ -77,6 +86,7 @@ const usePasswordGenerator = () => {
     updateOption,
     generatePassword,
     evaluateStrength,
+    criteria,
   };
 };
 

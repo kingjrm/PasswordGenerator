@@ -1,8 +1,14 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom styles for transitions and feedback */
+body {
+  font-family: 'Poppins', Arial, sans-serif;
+  background: #f6f7fb;
+  color: #23272f;
+}
+
 .fade-in {
   @apply transition-opacity duration-300 opacity-100;
 }

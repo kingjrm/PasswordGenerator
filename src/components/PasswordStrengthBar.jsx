@@ -6,13 +6,13 @@ const PasswordStrengthBar = ({ strength }) => {
   const getColor = () => {
     switch (strength) {
       case 'Strong':
-        return 'bg-gradient-to-r from-green-400 to-green-600 shadow-lg';
+        return 'bg-green-400';
       case 'Medium':
-        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-md';
+        return 'bg-yellow-300';
       case 'Weak':
-        return 'bg-gradient-to-r from-red-400 to-red-600 shadow-md';
+        return 'bg-red-300';
       default:
-        return 'bg-gray-300';
+        return 'bg-gray-200';
     }
   };
 
@@ -37,7 +37,7 @@ const PasswordStrengthBar = ({ strength }) => {
             {strength ? `${strength} Password` : 'Password Strength'}
           </span>
         </div>
-        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+        <div className="w-full h-4 bg-gray-100 rounded-full overflow-hidden shadow-inner">
           <div
             className={`h-4 rounded-full transition-all duration-700 ease-in-out ${getColor()}`}
             style={{ width: strength === 'Strong' ? '100%' : strength === 'Medium' ? '66%' : strength === 'Weak' ? '33%' : '0%' }}
