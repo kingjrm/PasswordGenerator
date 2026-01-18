@@ -1,25 +1,50 @@
 import React from 'react';
+import { strengthGifs } from '../utils/strengthGifs';
+import StrengthFeedback from './StrengthFeedback';
 
 const PasswordStrengthBar = ({ strength }) => {
   const getColor = () => {
     switch (strength) {
       case 'Strong':
-        return 'bg-green-500';
+        return 'bg-gradient-to-r from-green-400 to-green-600 shadow-lg';
       case 'Medium':
-        return 'bg-yellow-500';
+        return 'bg-gradient-to-r from-yellow-400 to-yellow-600 shadow-md';
       case 'Weak':
-        return 'bg-red-500';
+        return 'bg-gradient-to-r from-red-400 to-red-600 shadow-md';
       default:
         return 'bg-gray-300';
     }
   };
 
+  const getGif = () => {
+    if (strength === 'Strong') return strengthGifs.Strong;
+    if (strength === 'Medium') return strengthGifs.Medium;
+    if (strength === 'Weak') return strengthGifs.Weak;
+    return strengthGifs.Default;
+  };
+
   return (
-    <div className="w-full h-2 bg-gray-200 rounded mt-2">
-      <div
-        className={`h-2 rounded transition-all duration-300 ${getColor()}`}
-        style={{ width: strength === 'Strong' ? '100%' : strength === 'Medium' ? '66%' : strength === 'Weak' ? '33%' : '0%' }}
-      />
+    <div className="w-full flex flex-col items-center mt-4">
+      <div className="flex flex-col items-center w-full">
+        <div className="mb-2 flex flex-col items-center">
+          <img
+            src={getGif()}
+            alt={strength ? `${strength} password` : 'Password strength'}
+            className="h-24 w-24 object-contain transition-all duration-700"
+            style={{}}
+          />
+          <span className={`mt-2 text-lg font-bold tracking-wide ${strength === 'Strong' ? 'text-green-600' : strength === 'Medium' ? 'text-yellow-600' : strength === 'Weak' ? 'text-red-600' : 'text-gray-400'}`}>
+            {strength ? `${strength} Password` : 'Password Strength'}
+          </span>
+        </div>
+        <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden shadow-inner">
+          <div
+            className={`h-4 rounded-full transition-all duration-700 ease-in-out ${getColor()}`}
+            style={{ width: strength === 'Strong' ? '100%' : strength === 'Medium' ? '66%' : strength === 'Weak' ? '33%' : '0%' }}
+          />
+        </div>
+      </div>
+      <StrengthFeedback strength={strength} />
     </div>
   );
 };

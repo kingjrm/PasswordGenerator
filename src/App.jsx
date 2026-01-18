@@ -15,17 +15,29 @@ const App = () => {
     strength,
     updateOption,
     generatePassword,
+    evaluateStrength,
   } = usePasswordGenerator();
   const [copied, setCopied] = useState(false);
+  const [customPassword, setCustomPassword] = useState('');
+  const [customStrength, setCustomStrength] = useState('');
 
   useEffect(() => {
     generatePassword();
     // eslint-disable-next-line
   }, [options]);
 
+  useEffect(() => {
+    if (customPassword) {
+      setCustomStrength(evaluateStrength(customPassword, true));
+    } else {
+      setCustomStrength('');
+    }
+  }, [customPassword, evaluateStrength]);
+
   const handleCopy = async () => {
-    if (password) {
-      await copyToClipboard(password);
+    const toCopy = customPassword || password;
+    if (toCopy) {
+      await copyToClipboard(toCopy);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     }
@@ -38,10 +50,11 @@ const App = () => {
         <div className="flex items-center space-x-2">
           <input
             type="text"
-            value={password}
-            readOnly
+            value={customPassword || password}
+            onChange={e => setCustomPassword(e.target.value)}
+            placeholder="Generated or custom password"
             className="flex-1 px-3 py-2 border rounded font-mono text-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
-            aria-label="Generated password"
+            aria-label="Password"
           />
           <IconButton
             icon={copied ? <span className="text-green-500">✔</span> : <FaCopy />}
@@ -52,11 +65,11 @@ const App = () => {
           <IconButton
             icon={<FaRedo />}
             label="Regenerate password"
-            onClick={generatePassword}
+            onClick={() => { setCustomPassword(''); generatePassword(); }}
             className="bg-gray-100 hover:bg-gray-200"
           />
         </div>
-        <PasswordStrengthBar strength={strength} />
+        <PasswordStrengthBar strength={customPassword ? customStrength : strength} />
         <div className="grid grid-cols-2 gap-4">
           <Checkbox
             id="uppercase"
@@ -81,6 +94,29 @@ const App = () => {
             label="Symbols"
             checked={options.symbols}
             onChange={e => updateOption('symbols', e.target.checked)}
+          />
+          <Checkbox
+            id="exclude-similar"
+            label="Exclude Similar (i/l/1/O/0)"
+            checked={options.excludeSimilar}
+            onChange={e => updateOption('excludeSimilar', e.target.checked)}
+          />
+          <Checkbox
+            id="exclude-ambiguous"
+            label="Exclude Ambiguous (!, {, }, [, ], etc.)"
+            checked={options.excludeAmbiguous}
+            onChange={e => updateOption('excludeAmbiguous', e.target.checked)}
+          />
+        </div>
+        <div className="mt-2">
+          <label htmlFor="custom-symbols" className="block text-sm text-gray-700 font-medium mb-1">Custom Symbols</label>
+          <input
+            id="custom-symbols"
+            type="text"
+            value={options.customSymbols}
+            onChange={e => updateOption('customSymbols', e.target.value)}
+            placeholder="e.g. @#$%"
+            className="w-full px-3 py-2 border rounded bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-400 transition"
           />
         </div>
         <RangeSlider

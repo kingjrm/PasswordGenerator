@@ -7,15 +7,28 @@ const usePasswordGenerator = () => {
     lowercase: true,
     numbers: true,
     symbols: true,
+    excludeSimilar: false,
+    excludeAmbiguous: false,
+    customSymbols: '',
   });
   const [password, setPassword] = useState('');
   const [strength, setStrength] = useState('');
 
   const generatePassword = useCallback(() => {
-    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    const lower = 'abcdefghijklmnopqrstuvwxyz';
-    const nums = '0123456789';
-    const syms = '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    let lower = 'abcdefghijklmnopqrstuvwxyz';
+    let nums = '0123456789';
+    let syms = options.customSymbols || '!@#$%^&*()_+-=[]{}|;:,.<>?';
+    // Exclude similar characters if option is set
+    if (options.excludeSimilar) {
+      upper = upper.replace(/[O0I1L]/g, '');
+      lower = lower.replace(/[ol]/g, '');
+      nums = nums.replace(/[01]/g, '');
+    }
+    // Exclude ambiguous characters if option is set
+    if (options.excludeAmbiguous) {
+      syms = syms.replace(/[{}\[\]()/\\'"`~,;:.<>]/g, '');
+    }
     let chars = '';
     if (options.uppercase) chars += upper;
     if (options.lowercase) chars += lower;
@@ -33,19 +46,23 @@ const usePasswordGenerator = () => {
       pwd += chars[array[i] % chars.length];
     }
     setPassword(pwd);
-    evaluateStrength(pwd);
+    setStrength(evaluateStrength(pwd));
   }, [options]);
 
-  const evaluateStrength = (pwd) => {
+  const evaluateStrength = (pwd, returnOnly = false) => {
     let score = 0;
     if (pwd.length >= 12) score++;
     if (/[A-Z]/.test(pwd)) score++;
     if (/[a-z]/.test(pwd)) score++;
     if (/[0-9]/.test(pwd)) score++;
     if (/[^A-Za-z0-9]/.test(pwd)) score++;
-    if (score >= 5) setStrength('Strong');
-    else if (score >= 3) setStrength('Medium');
-    else setStrength('Weak');
+    let result = '';
+    if (score >= 5) result = 'Strong';
+    else if (score >= 3) result = 'Medium';
+    else result = 'Weak';
+    if (returnOnly) return result;
+    setStrength(result);
+    return result;
   };
 
   const updateOption = (key, value) => {
@@ -59,6 +76,7 @@ const usePasswordGenerator = () => {
     setOptions,
     updateOption,
     generatePassword,
+    evaluateStrength,
   };
 };
 
