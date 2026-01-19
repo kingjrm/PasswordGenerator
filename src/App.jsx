@@ -53,7 +53,7 @@ const App = () => {
 
   useEffect(() => {
     if (mode === 'memorable' && keyword) {
-      // Generate a password that includes the keyword, padded with random chars
+      // Use the keyword and pad with random chars to reach desired length
       let base = keyword;
       let chars = '';
       if (options.uppercase) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -68,13 +68,7 @@ const App = () => {
       for (let i = 0; i < arr.length; i++) {
         extra += chars[arr[i] % chars.length];
       }
-      // Shuffle keyword and extra
-      let full = (base + extra).split('');
-      for (let i = full.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [full[i], full[j]] = [full[j], full[i]];
-      }
-      setCustomPassword(full.join(''));
+      setCustomPassword(base + extra);
     } else {
       setCustomPassword('');
       generatePassword();
@@ -102,6 +96,34 @@ const App = () => {
       trigger('Password copied!');
     }
   };
+
+  // --- Password Analytics calculations ---
+  // Calculate entropy for each password in history
+  const getCharsetSize = (pwd) => {
+    let size = 0;
+    if (/[A-Z]/.test(pwd)) size += 26;
+    if (/[a-z]/.test(pwd)) size += 26;
+    if (/[0-9]/.test(pwd)) size += 10;
+    if (/[^A-Za-z0-9]/.test(pwd)) size += 32; // Approximate for symbols
+    return size || 26; // fallback to 26 if nothing matches
+  };
+  const entropies = history.map(pwd => calculateEntropy(pwd.length, getCharsetSize(pwd)));
+  const avgEntropy = entropies.length ? (entropies.reduce((a, b) => a + b, 0) / entropies.length) : 0;
+  const strongCount = history.filter(pwd => evaluateStrength(pwd, true) === 'Strong').length;
+  const veryStrongCount = history.filter(pwd => pwd.length >= 16 && evaluateStrength(pwd, true) === 'Strong').length;
+  // Strength distribution
+  const dist = { 'Very Strong': 0, 'Strong': 0, 'Medium': 0, 'Weak': 0 };
+  history.forEach(pwd => {
+    const s = evaluateStrength(pwd, true);
+    if (pwd.length >= 16 && s === 'Strong') dist['Very Strong']++;
+    else if (s === 'Strong') dist['Strong']++;
+    else if (s === 'Medium') dist['Medium']++;
+    else dist['Weak']++;
+  });
+
+  // Determine current password strength label
+  const currentStrength = customPassword ? evaluateStrength(customPassword, true) : strength;
+  const currentStrengthLabel = (customPassword || password).length >= 16 && currentStrength === 'Strong' ? 'VERY STRONG' : currentStrength ? currentStrength.toUpperCase() : '';
 
   return (
     <div className={`min-h-screen w-full font-poppins bg-[#f6f7fb] dark:bg-gray-900`}>
@@ -209,10 +231,10 @@ const App = () => {
             <h2 className="text-base font-bold text-gray-900 mb-4">Generated Passwords</h2>
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 text-xs font-semibold rounded-full bg-green-50 text-green-600 border border-green-200">VERY STRONG</span>
+                <span className={`px-3 py-1 text-xs font-semibold rounded-full border ${currentStrengthLabel === 'VERY STRONG' ? 'bg-green-50 text-green-600 border-green-200' : currentStrengthLabel === 'STRONG' ? 'bg-green-100 text-green-700 border-green-300' : currentStrengthLabel === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-300' : currentStrengthLabel === 'WEAK' ? 'bg-red-100 text-red-700 border-red-300' : 'bg-gray-100 text-gray-400 border-gray-200'}`}>{currentStrengthLabel}</span>
                 <span className="text-xs text-gray-400 flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" fill="none"/><path d="M12 8v4l3 3" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Millions of years
+                  {/* You can add a dynamic time-to-crack estimate here if desired */}
                 </span>
               </div>
               <div className="flex items-center gap-2 mb-4">
@@ -239,7 +261,7 @@ const App = () => {
               </div>
               <div className="flex justify-between text-xs text-gray-500 mb-6">
                 <span>Security Strength</span>
-                <span>103 bits entropy</span>
+                <span>{(customPassword || password) ? `${calculateEntropy((customPassword || password).length, getCharsetSize(customPassword || password)).toFixed(2)} bits entropy` : '--'}</span>
               </div>
               <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
                 <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" /></svg>
@@ -248,11 +270,11 @@ const App = () => {
               <div className="flex gap-5 mb-5">
                 <div className="flex-1 bg-blue-50 border border-blue-100 rounded-lg p-3 flex flex-col items-center">
                   <span className="text-xs text-blue-500 font-medium mb-1">Average Entropy</span>
-                  <span className="text-2xl font-bold text-blue-700">103 bits</span>
+                  <span className="text-2xl font-bold text-blue-700">{avgEntropy.toFixed(2)} bits</span>
                 </div>
                 <div className="flex-1 bg-green-50 border border-green-100 rounded-lg p-3 flex flex-col items-center">
                   <span className="text-xs text-green-500 font-medium mb-1">Strong Passwords</span>
-                  <span className="text-2xl font-bold text-green-700">1/1</span>
+                  <span className="text-2xl font-bold text-green-700">{strongCount}/{history.length}</span>
                 </div>
               </div>
               <div>
@@ -260,24 +282,30 @@ const App = () => {
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-24 text-xs text-gray-700">Very Strong</span>
                   <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-2 rounded-full bg-green-500" style={{ width: '100%' }} />
+                    <div className="h-2 rounded-full bg-green-500" style={{ width: history.length ? `${(dist['Very Strong'] / history.length) * 100}%` : '0%' }} />
                   </div>
-                  <span className="text-xs text-gray-700">1</span>
+                  <span className="text-xs text-gray-700">{dist['Very Strong']}</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-24 text-xs text-gray-700">Strong</span>
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden" />
-                  <span className="text-xs text-gray-700">0</span>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 rounded-full bg-green-400" style={{ width: history.length ? `${(dist['Strong'] / history.length) * 100}%` : '0%' }} />
+                  </div>
+                  <span className="text-xs text-gray-700">{dist['Strong']}</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="w-24 text-xs text-gray-700">Medium</span>
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden" />
-                  <span className="text-xs text-gray-700">0</span>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 rounded-full bg-yellow-400" style={{ width: history.length ? `${(dist['Medium'] / history.length) * 100}%` : '0%' }} />
+                  </div>
+                  <span className="text-xs text-gray-700">{dist['Medium']}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="w-24 text-xs text-gray-700">Weak</span>
-                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden" />
-                  <span className="text-xs text-gray-700">0</span>
+                  <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div className="h-2 rounded-full bg-red-400" style={{ width: history.length ? `${(dist['Weak'] / history.length) * 100}%` : '0%' }} />
+                  </div>
+                  <span className="text-xs text-gray-700">{dist['Weak']}</span>
                 </div>
               </div>
             </div>
